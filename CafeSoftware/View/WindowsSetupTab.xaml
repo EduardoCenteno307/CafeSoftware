@@ -1,0 +1,65 @@
+﻿<UserControl x:Class="CafeSoftware.View.WindowsSetupTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Border Background="#15202B" Padding="16">
+            <StackPanel>
+                <TextBlock Text="Customer account and lockdown" Foreground="#9FB3C8"/>
+
+                <TextBlock Text="{Binding SummaryText}" FontSize="16" FontWeight="SemiBold" Margin="0,6,0,10">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="#F59E0B"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                    <Setter Property="Foreground" Value="#4ADE80"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <ItemsControl ItemsSource="{Binding Lines}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                <TextBlock Text="{Binding Mark}" Width="24" FontSize="15" FontWeight="Bold">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#F87171"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsOk}" Value="True">
+                                                    <Setter Property="Foreground" Value="#4ADE80"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="{Binding Label}" Foreground="White" FontSize="14"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <StackPanel IsEnabled="{Binding CanUse}" Margin="0,16,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Activate lockdown" Width="150" Height="32"
+                                Command="{Binding ActivateCommand}"/>
+                        <Button Content="Remove lockdown" Width="150" Height="32" Margin="8,0,0,0"
+                                Command="{Binding RemoveCommand}"/>
+                        <Button Content="Refresh" Width="80" Height="32" Margin="8,0,0,0"
+                                Command="{Binding RefreshCommand}"/>
+                    </StackPanel>
+                    <CheckBox Content="When removing, also delete the Customer account and its files"
+                              IsChecked="{Binding DeleteAccount}" Foreground="White" Margin="0,10,0,0"/>
+                </StackPanel>
+
+                <TextBlock Text="{Binding StatusText}" Foreground="#FACC15" TextWrapping="Wrap"
+                           MinHeight="20" Margin="0,10,0,0"/>
+
+                <TextBlock TextWrapping="Wrap" Foreground="#4B5D70" FontSize="12" Margin="0,8,0,0"
+                           Text="Use this on the shop PC only. Windows asks for administrator permission, then a progress window lists each step. Activating copies the program to C:\CafeSoftware, creates the Customer account (a standard account with no password), signs in to it automatically at startup, and applies the restrictions (no Task Manager, Run, Control Panel, Command Prompt or Registry Editor). After a program update, press Activate again to copy the new version. Restart the PC after activating."/>
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</UserControl>

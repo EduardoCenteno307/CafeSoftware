@@ -1,0 +1,67 @@
+﻿<Window x:Class="CafeSoftware.View.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CafeSoftware Lock" WindowStyle="None" WindowState="Maximized"
+        ResizeMode="NoResize" Topmost="True" Background="#101820"
+        KeyDown="Window_KeyDown" Closing="Window_Closing">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Window.Resources>
+    <Grid>
+        <DockPanel VerticalAlignment="Top" Margin="30,20" LastChildFill="False">
+            <TextBlock Text="{Binding ClockText}" DockPanel.Dock="Left" FontSize="22" Foreground="#9FB3C8"/>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Ellipse Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,8,0">
+                    <Ellipse.Style>
+                        <Style TargetType="Ellipse">
+                            <Setter Property="Fill" Value="#F87171"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                    <Setter Property="Fill" Value="#4ADE80"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Ellipse.Style>
+                </Ellipse>
+                <TextBlock Text="{Binding ConnectionText}" FontSize="16"
+                           Foreground="#9FB3C8" VerticalAlignment="Center"/>
+            </StackPanel>
+        </DockPanel>
+
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding ShopName}" FontSize="64" FontWeight="Bold"
+                       Foreground="White" HorizontalAlignment="Center"/>
+            <TextBlock Text="Insert coins to start your session" FontSize="28" Foreground="#9FB3C8"
+                       HorizontalAlignment="Center" Margin="0,10,0,30"/>
+            <Border Background="#1F2D3D" CornerRadius="12" Padding="30,15"
+                    HorizontalAlignment="Center" Margin="0,0,0,30">
+                <TextBlock Text="{Binding RateText}" FontSize="28" FontWeight="SemiBold" Foreground="#4ADE80"/>
+            </Border>
+            <TextBlock Text="{Binding Message}" FontSize="24" Foreground="#9FB3C8"
+                       HorizontalAlignment="Center" Margin="0,0,0,30"/>
+            <Border Background="#1F2D3D" CornerRadius="12" Padding="30,15" HorizontalAlignment="Center">
+                <TextBlock Text="INSERT COIN TO UNLOCK" FontSize="30" FontWeight="SemiBold" Foreground="#FACC15"/>
+            </Border>
+        </StackPanel>
+
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,30"
+                Visibility="{Binding ShowDebug, Converter={StaticResource BoolToVis}}"
+                Background="#1F2D3D" BorderBrush="#FACC15" BorderThickness="1"
+                CornerRadius="10" Padding="20,12">
+            <StackPanel>
+                <TextBlock Text="DEBUG — simulate coin insert" Foreground="#FACC15"
+                           FontSize="14" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="Insert ₱1" Width="110" Height="40" Margin="6" FontSize="16"
+                            Command="{Binding InsertCoinCommand}" CommandParameter="1"/>
+                    <Button Content="Insert ₱5" Width="110" Height="40" Margin="6" FontSize="16"
+                            Command="{Binding InsertCoinCommand}" CommandParameter="5"/>
+                    <Button Content="Insert ₱10" Width="110" Height="40" Margin="6" FontSize="16"
+                            Command="{Binding InsertCoinCommand}" CommandParameter="10"/>
+                </StackPanel>
+                <TextBlock Text="Keys: 1 / 5 / 0   |   Ctrl+Shift+A = admin   |   Ctrl+Shift+Q = quit"
+                           Foreground="#4B5D70" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
