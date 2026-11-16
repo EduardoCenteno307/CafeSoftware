@@ -39,6 +39,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _connStatusText = "";
     [ObservableProperty] private bool _isConnected;
     [ObservableProperty] private string _lastCoinText = "Insert a coin to see how many pulses it sends.";
+    [ObservableProperty] private bool _showDefaultPasswordWarning;
 
     public ObservableCollection<string> Ports { get; } = new();
     public ObservableCollection<PulseRow> PulseRows { get; } = new();
@@ -64,6 +65,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         ComPort = c.ComPort;
         BaudRate = c.BaudRate.ToString();
         DebugMode = c.DebugMode;
+        ShowDefaultPasswordWarning = c.UsingDefaultPassword;
 
         foreach (var pair in c.PulseTable.OrderBy(p => p.Key))
         {
@@ -304,6 +306,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             AppLog.Write("Admin password changed");
         }
         c.Save();
+        ShowDefaultPasswordWarning = c.UsingDefaultPassword;
 
         string tableText = string.Join(" ", table.OrderBy(t => t.Key)
             .Select(t => $"{t.Key}p=₱{t.Value.Pesos}+{t.Value.BonusSeconds}s"));

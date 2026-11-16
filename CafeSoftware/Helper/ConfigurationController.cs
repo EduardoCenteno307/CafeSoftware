@@ -1,5 +1,8 @@
-﻿using System.Security.Cryptography;
+﻿using System.IO;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using CafeSoftware.Enums;
 
 namespace CafeSoftware.Helper;
@@ -7,42 +10,84 @@ namespace CafeSoftware.Helper;
 // What one coin is worth: its pesos, plus its own bonus seconds (0 = no bonus)
 public record CoinRule(int Pesos, int BonusSeconds);
 
+// Loads and saves the owner's settings (settings.json) and checks the admin password.
+// Values that are missing or out of range fall back to safe defaults.
 public class ConfigurationController
 {
-    // Used until the owner saves a coin table: pulses : pesos : bonus seconds
-    private const string DefaultPulseTable = "1:1:0,2:1:0,3:5:300,4:5:300,5:10:600";
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter() }
+    };
 
-    private readonly ConfigReader _reader;
+    private readonly string _path;
+    private AppSettings _s = new();
+
+    public string? LastError { get; private set; }
 
     // Keeps older code like App.Config.Data.X working
     public ConfigurationController Data => this;
 
-    public ConfigurationController(ConfigReader reader)
+    public ConfigurationController(string filePath)
     {
-        _reader = reader;
+        _path = filePath;
+        Load();
 
-        if (string.IsNullOrEmpty(PasswordHash))
+        // First run: create the default password
+        if (string.IsNullOrEmpty(_s.PasswordHash))
         {
             SetPassword("admin123");
             Save();
         }
     }
 
-    private int GetInt(Section s, ConfigKey k, int def) =>
-        int.TryParse(_reader.GetValue(s, k), out int v) && v > 0 ? v : def;
+    // ---------- loading and saving ----------
 
-    // Same as GetInt but 0 is allowed (for "no bonus" or "off")
-    private int GetIntOrZero(Section s, ConfigKey k, int def) =>
-        int.TryParse(_reader.GetValue(s, k), out int v) && v >= 0 ? v : def;
+    private void Load()
+    {
+        try
+        {
+            if (!File.Exists(_path)) return;
+            var loaded = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(_path), JsonOptions);
+            if (loaded != null) _s = loaded;
+        }
+        catch (Exception ex)
+        {
+            // The file is unreadable: keep a copy for inspection and start from the defaults
+            LastError = ex.Message;
+            try { File.Move(_path, _path + ".bad", true); } catch { }
+            _s = new AppSettings();
+        }
+    }
 
-    private bool GetBool(Section s, ConfigKey k, bool def) =>
-        bool.TryParse(_reader.GetValue(s, k), out bool b) ? b : def;
+    // Written to a temporary file first, so a power cut cannot leave half a settings file
+    public void Save()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+        string temp = _path + ".tmp";
+        File.WriteAllText(temp, JsonSerializer.Serialize(_s, JsonOptions));
+        File.Move(temp, _path, true);
+    }
+
+    // ---------- time and pricing ----------
 
     // Seconds of computer time for each peso
     public int SecondsPerPeso
     {
-        get => GetInt(Section.General, ConfigKey.SecondsPerPeso, 360);
-        set => _reader.SetValue(Section.General, ConfigKey.SecondsPerPeso, value.ToString());
+        get => _s.SecondsPerPeso > 0 ? _s.SecondsPerPeso : 360;
+        set => _s.SecondsPerPeso = value;
+    }
+
+    public int WarnSeconds
+    {
+        get => _s.WarnSeconds > 0 ? _s.WarnSeconds : 60;
+        set => _s.WarnSeconds = value;
+    }
+
+    public int FinalSeconds
+    {
+        get => _s.FinalSeconds > 0 ? _s.FinalSeconds : 10;
+        set => _s.FinalSeconds = value;
     }
 
     // ---------- coin table: pulses sent by the coin acceptor -> pesos and bonus ----------
@@ -51,16 +96,24 @@ public class ConfigurationController
     {
         get
         {
-            var table = ParsePulseTable(_reader.GetValue(Section.Serial, ConfigKey.PulseTable));
-            return table.Count > 0 ? table : ParsePulseTable(DefaultPulseTable);
+            var table = new Dictionary<int, CoinRule>();
+            foreach (var c in _s.Coins ?? new List<CoinSetting>())
+            {
+                if (c.Pulses is >= 1 and <= 50 && c.Pesos is >= 1 and <= 100 && c.BonusSeconds is >= 0 and <= 86400)
+                    table[c.Pulses] = new CoinRule(c.Pesos, c.BonusSeconds);
+            }
+
+            return table.Count > 0
+                ? table
+                : AppSettings.DefaultCoins().ToDictionary(c => c.Pulses, c => new CoinRule(c.Pesos, c.BonusSeconds));
         }
     }
 
     public void SetPulseTable(IEnumerable<KeyValuePair<int, CoinRule>> rows)
     {
-        string text = string.Join(",", rows.OrderBy(r => r.Key)
-            .Select(r => $"{r.Key}:{r.Value.Pesos}:{r.Value.BonusSeconds}"));
-        _reader.SetValue(Section.Serial, ConfigKey.PulseTable, text);
+        _s.Coins = rows.OrderBy(r => r.Key)
+            .Select(r => new CoinSetting { Pulses = r.Key, Pesos = r.Value.Pesos, BonusSeconds = r.Value.BonusSeconds })
+            .ToList();
     }
 
     // The coin that sends this many pulses, or null if the count is not in the table
@@ -72,7 +125,7 @@ public class ConfigurationController
         PulseTable.OrderBy(p => p.Key).Select(p => p.Value)
                   .FirstOrDefault(r => r.Pesos == pesos)?.BonusSeconds ?? 0;
 
-    // For the price list on the lock screen: one line per coin value, with its time
+    // For the price list on the lock screen: one entry per coin value, with its time
     public List<(int Pesos, int Seconds)> CoinPrices()
     {
         var rules = PulseTable.OrderBy(p => p.Key).Select(p => p.Value).ToList();
@@ -82,124 +135,69 @@ public class ConfigurationController
                     .ToList();
     }
 
-    // Reads "3:5:300,4:5:300". An older row without a bonus ("3:5") takes the old fixed bonus
-    // for ₱5 or ₱10, so existing settings keep working until they are saved again.
-    private Dictionary<int, CoinRule> ParsePulseTable(string? text)
-    {
-        var table = new Dictionary<int, CoinRule>();
-        if (string.IsNullOrWhiteSpace(text)) return table;
-
-        foreach (var part in text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            var f = part.Split(':');
-            if (f.Length < 2 || f.Length > 3) continue;
-            if (!int.TryParse(f[0], out int pulses) || !int.TryParse(f[1], out int pesos)) continue;
-            if (pulses < 1 || pulses > 50 || pesos < 1 || pesos > 100) continue;
-
-            int bonus;
-            if (f.Length == 3)
-            {
-                if (!int.TryParse(f[2], out bonus) || bonus < 0 || bonus > 86400) continue;
-            }
-            else bonus = LegacyBonus(pesos);
-
-            table[pulses] = new CoinRule(pesos, bonus);
-        }
-        return table;
-    }
-
-    private int LegacyBonus(int pesos) => pesos switch
-    {
-        5 => GetIntOrZero(Section.General, ConfigKey.Bonus5Seconds, 300),
-        10 => GetIntOrZero(Section.General, ConfigKey.Bonus10Seconds, 600),
-        _ => 0
-    };
-
     // ---------- other settings ----------
 
     // Minutes on the lock screen with no coin before the PC shuts down (0 = never)
     public int IdleShutdownMinutes
     {
-        get => GetIntOrZero(Section.General, ConfigKey.IdleShutdownMinutes, 0);
-        set => _reader.SetValue(Section.General, ConfigKey.IdleShutdownMinutes, value.ToString());
+        get => Math.Max(0, _s.IdleShutdownMinutes);
+        set => _s.IdleShutdownMinutes = value;
     }
 
     // What happens when a customer's time runs out
     public EndAction OnSessionEnd
     {
-        get => Enum.TryParse<EndAction>(_reader.GetValue(Section.General, ConfigKey.EndAction), true, out var a)
-               && Enum.IsDefined(a) ? a : EndAction.Lock;
-        set => _reader.SetValue(Section.General, ConfigKey.EndAction, value.ToString());
+        get => Enum.IsDefined(_s.OnSessionEnd) ? _s.OnSessionEnd : EndAction.Lock;
+        set => _s.OnSessionEnd = value;
     }
 
     public bool DebugMode
     {
-        get => GetBool(Section.General, ConfigKey.DebugMode, true);
-        set => _reader.SetValue(Section.General, ConfigKey.DebugMode, value.ToString());
+        get => _s.DebugMode;
+        set => _s.DebugMode = value;
     }
 
     public string ShopName
     {
-        get => _reader.GetValue(Section.General, ConfigKey.ShopName) ?? "PISONET COMPUTER";
-        set => _reader.SetValue(Section.General, ConfigKey.ShopName, value);
-    }
-
-    public int WarnSeconds
-    {
-        get => GetInt(Section.General, ConfigKey.WarnSeconds, 60);
-        set => _reader.SetValue(Section.General, ConfigKey.WarnSeconds, value.ToString());
-    }
-
-    public int FinalSeconds
-    {
-        get => GetInt(Section.General, ConfigKey.FinalSeconds, 10);
-        set => _reader.SetValue(Section.General, ConfigKey.FinalSeconds, value.ToString());
+        get => string.IsNullOrWhiteSpace(_s.ShopName) ? "PISONET COMPUTER" : _s.ShopName;
+        set => _s.ShopName = value;
     }
 
     public string ComPort
     {
-        get => _reader.GetValue(Section.Serial, ConfigKey.ComPort) ?? "";
-        set => _reader.SetValue(Section.Serial, ConfigKey.ComPort, value);
+        get => _s.ComPort ?? "";
+        set => _s.ComPort = value;
     }
 
     public int BaudRate
     {
-        get => GetInt(Section.Serial, ConfigKey.BaudRate, 115200);
-        set => _reader.SetValue(Section.Serial, ConfigKey.BaudRate, value.ToString());
+        get => _s.BaudRate >= 300 ? _s.BaudRate : 115200;
+        set => _s.BaudRate = value;
     }
 
-    private string Salt
-    {
-        get => _reader.GetValue(Section.Security, ConfigKey.Salt) ?? "";
-        set => _reader.SetValue(Section.Security, ConfigKey.Salt, value);
-    }
-
-    private string PasswordHash
-    {
-        get => _reader.GetValue(Section.Security, ConfigKey.PasswordHash) ?? "";
-        set => _reader.SetValue(Section.Security, ConfigKey.PasswordHash, value);
-    }
+    // ---------- admin password (stored as a salted hash, never as text) ----------
 
     public void SetPassword(string password)
     {
         byte[] salt = RandomNumberGenerator.GetBytes(16);
-        Salt = Convert.ToBase64String(salt);
-        PasswordHash = Convert.ToBase64String(Hash(password, salt));
+        _s.PasswordSalt = Convert.ToBase64String(salt);
+        _s.PasswordHash = Convert.ToBase64String(Hash(password, salt));
     }
 
     public bool VerifyPassword(string password)
     {
         try
         {
-            byte[] salt = Convert.FromBase64String(Salt);
-            byte[] expected = Convert.FromBase64String(PasswordHash);
+            byte[] salt = Convert.FromBase64String(_s.PasswordSalt);
+            byte[] expected = Convert.FromBase64String(_s.PasswordHash);
             return CryptographicOperations.FixedTimeEquals(Hash(password, salt), expected);
         }
         catch { return false; }
     }
 
+    // True while the published default password still works
+    public bool UsingDefaultPassword => VerifyPassword("admin123");
+
     private static byte[] Hash(string password, byte[] salt) =>
         Rfc2898DeriveBytes.Pbkdf2(Encoding.UTF8.GetBytes(password), salt, 100_000, HashAlgorithmName.SHA256, 32);
-
-    public void Save() => _reader.Save();
 }

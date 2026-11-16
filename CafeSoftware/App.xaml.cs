@@ -14,11 +14,11 @@ public partial class App : Application
 {
     public static bool AllowExit { get; set; }
 
-    // C:\ProgramData\CafeSoftware\CafeSoftware.ini (read the first time it is needed)
+    // C:\ProgramData\CafeSoftware\settings.json (read the first time it is needed)
     private static readonly Lazy<ConfigurationController> _config = new(() => new ConfigurationController(
-        new ConfigReader(Path.Combine(
+        Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-            "CafeSoftware", "CafeSoftware.ini"))));
+            "CafeSoftware", "settings.json")));
 
     public static ConfigurationController Config => _config.Value;
 

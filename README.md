@@ -17,8 +17,8 @@ coin acceptor -> PC817 isolation module -> ESP8266 (or Arduino Mega) -> USB -> C
 ## Features
 
 - Full-screen lock screen with shop name, price list, clock and coin slot status
-- Countdown window with sound and pop-up alerts (first alert and a blinking final countdown), configurable
-- Coin table with a bonus in seconds per coin
+- Countdown window with sound and pop-up alerts (a first alert and a blinking final countdown), configurable
+- Coin table with a bonus in seconds for each coin
 - When time ends: show the lock screen, restart the PC, or shut it down
 - Idle shutdown when nobody uses the PC
 - Admin settings (Ctrl+Shift+A) in tabs, protected by a password stored as a salted hash
@@ -35,7 +35,7 @@ coin acceptor -> PC817 isolation module -> ESP8266 (or Arduino Mega) -> USB -> C
 - An ESP8266 board (NodeMCU or Wemos D1 mini) or an Arduino Mega
 - A USB data cable
 
-The ESP8266 inputs are **3.3 V only**. Never connect 5 V or 12 V to an ESP8266 pin. See `Firmware/` for the sketch and wiring notes.
+The ESP8266 inputs are **3.3 V only**. Never connect 5 V or 12 V to an ESP8266 pin. The wiring notes are in the header comments of the sketch.
 
 ## Build
 
@@ -48,7 +48,7 @@ You need the .NET 8 SDK and a recent Visual Studio (or the `dotnet` command line
 To make a copy to install on a shop PC:
 
 ```
-dotnet publish CafeSoftware/CafeSoftware.csproj -c Release -r win-x64 --self-contained true -o publish
+dotnet publish CafeSoftware/CafeSoftware.csproj -c Release -r win-x64 --self-contained true -o ../publish
 ```
 
 ## Firmware
@@ -61,12 +61,12 @@ The sketch is in `Firmware/CoinSlot/`. Open it in the Arduino IDE. It runs on th
 | `PULSES,<seq>,<count>` | a coin sent `<count>` pulses (repeated until acknowledged) |
 | `PONG` | reply to `PING` |
 
-CafeSoftware replies `ACK,<seq>` to each coin, so a coin is not lost and not counted twice.
+CafeSoftware replies `ACK,<seq>` to each coin, so a coin is not lost and not counted twice. Test commands (`LIVE`, `CAL`, `RAW`, `STATUS`, `SCAN`, `SIM,<n>`) are listed at the top of the sketch. Set `ENABLE_SIM` to `0` before using it in a shop.
 
 ## First run
 
 1. Start the app. It starts in **test mode**, with test coin buttons on the lock screen.
-2. Press **Ctrl+Shift+A** and log in with the default password `admin123`. The app asks you to choose a new one. **Do this**, because the default password is public.
+2. Press **Ctrl+Shift+A** and log in with the default password `admin123`. The app asks you to choose a new one, and Settings shows a warning until you do. **Change it**, because the default password is public.
 3. Go through the Settings tabs: pricing, coin slot (COM port, coin table), session and general.
 4. Insert each coin and add it to the coin table.
 5. On the shop PC, use the **Windows setup** tab to create the Customer account.
@@ -76,7 +76,7 @@ CafeSoftware replies `ACK,<seq>` to each coin, so a coin is not lost and not cou
 
 - The restrictions stop ordinary users, not a determined one. Ctrl+Alt+Del cannot be blocked by software.
 - Run customers on a standard (non-administrator) Windows account, which is what the setup creates.
-- The settings file is `C:\ProgramData\CafeSoftware\CafeSoftware.ini`. If you forget the admin password, delete it. That also resets every setting.
+- Settings are saved in `C:\ProgramData\CafeSoftware\settings.json`. If you forget the admin password, delete that file. That also resets every setting.
 
 ## Known limitations
 
