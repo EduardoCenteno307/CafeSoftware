@@ -1,4 +1,4 @@
-# CafeSoftware
+# PisoKlik: Cafe Management System
 
 A coin-operated timer for a Windows PC, like a pisonet. The PC stays locked until someone inserts a coin. The coin buys time, and when the time runs out the PC restarts or shuts down for the next customer.
 
@@ -7,12 +7,12 @@ A coin-operated timer for a Windows PC, like a pisonet. The PC stays locked unti
 ## How it works
 
 ```
-coin acceptor -> PC817 isolation module -> ESP8266 (or Arduino Mega) -> USB -> CafeSoftware (Windows)
+coin acceptor -> PC817 isolation module -> ESP8266 (or Arduino Mega) -> USB -> PisoKlik (Windows)
 ```
 
 - The **coin acceptor** recognizes the coin and sends a burst of pulses. Each coin type sends a different number of pulses.
 - The **microcontroller** counts the pulses and sends the count to the PC over USB serial.
-- **CafeSoftware** looks the count up in a coin table (pulses -> pesos + bonus seconds) and adds the time.
+- **PisoKlik** looks the count up in a coin table (pulses -> pesos + bonus seconds) and adds the time.
 
 ## Features
 
@@ -61,7 +61,7 @@ The sketch is in `Firmware/CoinSlot/`. Open it in the Arduino IDE. It runs on th
 | `PULSES,<seq>,<count>` | a coin sent `<count>` pulses (repeated until acknowledged) |
 | `PONG` | reply to `PING` |
 
-CafeSoftware replies `ACK,<seq>` to each coin, so a coin is not lost and not counted twice. Test commands (`LIVE`, `CAL`, `RAW`, `STATUS`, `SCAN`, `SIM,<n>`) are listed at the top of the sketch. Set `ENABLE_SIM` to `0` before using it in a shop.
+PisoKlik replies `ACK,<seq>` to each coin, so a coin is not lost and not counted twice. Test commands (`LIVE`, `CAL`, `RAW`, `STATUS`, `SCAN`, `SIM,<n>`) are listed at the top of the sketch. Set `ENABLE_SIM` to `0` before using it in a shop.
 
 ## First run
 

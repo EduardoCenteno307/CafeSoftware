@@ -43,7 +43,7 @@ public static class WindowsSetup
     {
         if (string.Equals(ExeName, "dotnet.exe", StringComparison.OrdinalIgnoreCase))
         {
-            reason = "Start CafeSoftware from its own .exe file (for example from Visual Studio or a published folder), not through 'dotnet run'.";
+            reason = "Start PisoKlik from its own .exe file (for example from Visual Studio or a published folder), not through 'dotnet run'.";
             return false;
         }
         reason = "";
@@ -194,7 +194,7 @@ public static class WindowsSetup
 
         File.WriteAllLines(StartupFile, lines, Encoding.ASCII);
         return File.Exists(StartupFile)
-            ? new StepResult(true, "The restrictions and CafeSoftware start for Customer at sign-in")
+            ? new StepResult(true, "The restrictions and PisoKlik start for Customer at sign-in")
             : new StepResult(false, "Could not write " + StartupFile);
     }
 

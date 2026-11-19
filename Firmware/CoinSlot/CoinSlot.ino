@@ -1,17 +1,17 @@
 /*
-  CoinSlot firmware v1.4 for CafeSoftware
+  CoinSlot firmware v1.4 for PisoKlik
   Runs on the ESP8266 (NodeMCU, Wemos D1 mini) and on the Arduino Mega.
 
   Counts the pulses from the Allan coin acceptor (through the PC817 isolation
   module) and reports each coin to the PC as a NUMBER OF PULSES.
-  What a pulse count is worth is decided in CafeSoftware (Settings > Coin table),
+  What a pulse count is worth is decided in PisoKlik (Settings > Coin table),
   not in this firmware.
 
   Messages to the PC (one per line):
     READY                      sent once at boot
     PULSES,<seq>,<count>       a coin sent <count> pulses. Repeated every second until acknowledged.
     PONG                       reply to PING
-    DBG,...                    debug text. CafeSoftware ignores these lines.
+    DBG,...                    debug text. PisoKlik ignores these lines.
 
   Messages from the PC:
     ACK,<seq>                  the PC got coin <seq>
@@ -66,7 +66,7 @@
 // ============================ SETTINGS ============================
 
 #define PULSE_ACTIVE_LOW  true     // true: the pin goes LOW during a pulse (PC817 output pulls it down)
-#define SERIAL_BAUD       115200   // must match the baud rate in CafeSoftware > Settings
+#define SERIAL_BAUD       115200   // must match the baud rate in PisoKlik > Settings
 
 #define DEBOUNCE_US       5000UL   // edges closer together than this are noise
 #define GAP_MS            300UL    // no pulse for this long = the coin has finished

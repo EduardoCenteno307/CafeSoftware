@@ -90,7 +90,7 @@ public partial class SetupProgressViewModel : ObservableObject
         if (mode == SetupMode.Activate)
         {
             Summary = failed == 0
-                ? "Done. Restart the PC now: it will sign in to Customer and open CafeSoftware. Restart once more so every restriction takes effect."
+                ? "Done. Restart the PC now: it will sign in to Customer and open PisoKlik. Restart once more so every restriction takes effect."
                 : "Stopped because a step failed. Nothing after it was done. Read the red line above, fix the cause and try again.";
         }
         else

@@ -1,7 +1,7 @@
 ﻿<Window x:Class="CafeSoftware.View.SessionPanelWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="CafeSoftware — Session" Width="340" Height="350"
+        Title="PisoKlik - Session" Width="340" Height="350"
         MinWidth="340" MinHeight="350"
         Topmost="True" Background="#101820"
         KeyDown="Window_KeyDown" Closing="Window_Closing">

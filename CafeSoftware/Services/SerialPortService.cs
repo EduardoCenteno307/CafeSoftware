@@ -227,7 +227,7 @@ public class SerialPortService : IDisposable
                     pesos > 0 && pesos <= 100)
                 {
                     Send($"ACK,{coinSeq}");
-                    if (coinSeq > _lastSeq)
+                    if (coinSeq > _lastSeq) 
                     {
                         _lastSeq = coinSeq;
                         CoinReceived?.Invoke(pesos);

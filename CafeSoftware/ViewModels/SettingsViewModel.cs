@@ -326,7 +326,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ExitApp()
     {
-        if (ConfirmRequested?.Invoke("Close CafeSoftware completely?") != true) return;
+        if (ConfirmRequested?.Invoke("Close PisoKlik completely?") != true) return;
         App.AllowExit = true;
         Application.Current.Shutdown();
     }
